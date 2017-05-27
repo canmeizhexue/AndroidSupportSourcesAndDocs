@@ -144,6 +144,7 @@ public class CoordinatorLayout extends ViewGroup implements NestedScrollingParen
     static final Comparator<View> TOP_SORTED_CHILDREN_COMPARATOR;
 
     private final List<View> mDependencySortedChildren = new ArrayList<>();
+    //有向不循环图
     private final DirectedAcyclicGraph<View> mChildDag = new DirectedAcyclicGraph<>();
 
     private final List<View> mTempList1 = new ArrayList<>();
@@ -562,7 +563,7 @@ public class CoordinatorLayout extends ViewGroup implements NestedScrollingParen
 
         return mKeylines[index];
     }
-
+    //解析Behavior
     static Behavior parseBehavior(Context context, AttributeSet attrs, String name) {
         if (TextUtils.isEmpty(name)) {
             return null;
@@ -601,7 +602,7 @@ public class CoordinatorLayout extends ViewGroup implements NestedScrollingParen
             throw new RuntimeException("Could not inflate Behavior subclass " + fullName, e);
         }
     }
-
+    //解析LayoutParams,
     LayoutParams getResolvedLayoutParams(View child) {
         final LayoutParams result = (LayoutParams) child.getLayoutParams();
         if (!result.mBehaviorResolved) {
@@ -623,7 +624,7 @@ public class CoordinatorLayout extends ViewGroup implements NestedScrollingParen
         }
         return result;
     }
-
+    //构建依赖关系，
     private void prepareChildren(final boolean forceRefresh) {
         if (!forceRefresh && mChildDag.size() == getChildCount()
                 && mChildDag.size() == mDependencySortedChildren.size()) {
@@ -652,9 +653,11 @@ public class CoordinatorLayout extends ViewGroup implements NestedScrollingParen
                 if (otherLp.dependsOn(this, other, view)) {
                     if (!mChildDag.contains(other)) {
                         // Make sure that the other node is added
+                        //添加节点
                         mChildDag.addNode(other);
                     }
                     // Now add the dependency to the graph
+                    //添加边
                     mChildDag.addEdge(view, other);
                 }
             }
@@ -664,6 +667,7 @@ public class CoordinatorLayout extends ViewGroup implements NestedScrollingParen
         mDependencySortedChildren.addAll(mChildDag.getSortedList());
         // We also need to reverse the result since we want the start of the list to contain
         // Views which have no dependencies, then dependent views after that
+        //希望第一个没有依赖于其他节点
         Collections.reverse(mDependencySortedChildren);
     }
 
@@ -730,7 +734,7 @@ public class CoordinatorLayout extends ViewGroup implements NestedScrollingParen
         int childState = 0;
 
         final boolean applyInsets = mLastInsets != null && ViewCompat.getFitsSystemWindows(this);
-
+        //这个地方迭代的是依赖排序好的孩子节点
         final int childCount = mDependencySortedChildren.size();
         for (int i = 0; i < childCount; i++) {
             final View child = mDependencySortedChildren.get(i);
@@ -766,7 +770,7 @@ public class CoordinatorLayout extends ViewGroup implements NestedScrollingParen
                 childHeightMeasureSpec = MeasureSpec.makeMeasureSpec(
                         heightSize - vertInsets, heightMode);
             }
-
+            //不同的子节点可以指定不同的Behavior，
             final Behavior b = lp.getBehavior();
             if (b == null || !b.onMeasureChild(this, child, childWidthMeasureSpec, keylineWidthUsed,
                     childHeightMeasureSpec, 0)) {
@@ -832,10 +836,13 @@ public class CoordinatorLayout extends ViewGroup implements NestedScrollingParen
                     + " measurement begins before layout is complete.");
         }
         if (lp.mAnchorView != null) {
+            //有停靠view，
             layoutChildWithAnchor(child, lp.mAnchorView, layoutDirection);
         } else if (lp.keyline >= 0) {
+            //有keyline
             layoutChildWithKeyline(child, lp.keyline, layoutDirection);
         } else {
+
             layoutChild(child, layoutDirection);
         }
     }
@@ -1457,7 +1464,7 @@ public class CoordinatorLayout extends ViewGroup implements NestedScrollingParen
         return Collections.unmodifiableList(mDependencySortedChildren);
     }
 
-    /**
+    /**添加或移除监听器，
      * Add or remove the pre-draw listener as necessary.
      */
     void ensurePreDrawListener() {
@@ -1480,7 +1487,7 @@ public class CoordinatorLayout extends ViewGroup implements NestedScrollingParen
         }
     }
 
-    /**
+    /**检查指定的view是否对其他的兄弟节点有布局依赖，
      * Check if the given child has any layout dependencies on other child views.
      */
     boolean hasDependencies(View child) {
@@ -2451,7 +2458,7 @@ public class CoordinatorLayout extends ViewGroup implements NestedScrollingParen
         }
     }
 
-    /**
+    /**布局参数，
      * Parameters describing the desired layout for a child of a {@link CoordinatorLayout}.
      */
     public static class LayoutParams extends ViewGroup.MarginLayoutParams {
@@ -2529,8 +2536,10 @@ public class CoordinatorLayout extends ViewGroup implements NestedScrollingParen
             this.gravity = a.getInteger(
                     R.styleable.CoordinatorLayout_Layout_android_layout_gravity,
                     Gravity.NO_GRAVITY);
+            //停靠id
             mAnchorId = a.getResourceId(R.styleable.CoordinatorLayout_Layout_layout_anchor,
                     View.NO_ID);
+            //停靠的大体gravity
             this.anchorGravity = a.getInteger(
                     R.styleable.CoordinatorLayout_Layout_layout_anchorGravity,
                     Gravity.NO_GRAVITY);
@@ -2541,6 +2550,7 @@ public class CoordinatorLayout extends ViewGroup implements NestedScrollingParen
             insetEdge = a.getInt(R.styleable.CoordinatorLayout_Layout_layout_insetEdge, 0);
             dodgeInsetEdges = a.getInt(
                     R.styleable.CoordinatorLayout_Layout_layout_dodgeInsetEdges, 0);
+            //可以判断有没有，
             mBehaviorResolved = a.hasValue(
                     R.styleable.CoordinatorLayout_Layout_layout_behavior);
             if (mBehaviorResolved) {
@@ -2758,6 +2768,7 @@ public class CoordinatorLayout extends ViewGroup implements NestedScrollingParen
          *         {@link View#NO_ID}.
          */
         View findAnchorView(CoordinatorLayout parent, View forChild) {
+            //没有相对其他view，
             if (mAnchorId == View.NO_ID) {
                 mAnchorView = mAnchorDirectChild = null;
                 return null;
@@ -2774,6 +2785,7 @@ public class CoordinatorLayout extends ViewGroup implements NestedScrollingParen
          * Assumes mAnchorId is valid.
          */
         private void resolveAnchorView(final View forChild, final CoordinatorLayout parent) {
+            //难道不一定是兄弟节点？
             mAnchorView = parent.findViewById(mAnchorId);
             if (mAnchorView != null) {
                 if (mAnchorView == parent) {
@@ -2784,7 +2796,7 @@ public class CoordinatorLayout extends ViewGroup implements NestedScrollingParen
                     throw new IllegalStateException(
                             "View can not be anchored to the the parent CoordinatorLayout");
                 }
-
+                //
                 View directChild = mAnchorView;
                 for (ViewParent p = mAnchorView.getParent();
                         p != parent && p != null;

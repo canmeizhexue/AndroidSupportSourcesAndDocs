@@ -91,7 +91,7 @@ public class NestedScrollingChildHelper {
         return mNestedScrollingParent != null;
     }
 
-    /**
+    /**开始嵌套滑动，
      * Start a new nested scroll for this view.
      *
      * <p>This is a delegate method. Call it from your {@link android.view.View View} subclass
@@ -222,7 +222,7 @@ public class NestedScrollingChildHelper {
         return false;
     }
 
-    /**
+    /**抛掷事件
      * Dispatch a nested fling operation to the current nested scrolling parent.
      *
      * <p>This is a delegate method. Call it from your {@link android.view.View View} subclass

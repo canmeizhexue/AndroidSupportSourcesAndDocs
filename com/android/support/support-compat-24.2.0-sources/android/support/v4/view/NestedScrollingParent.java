@@ -22,7 +22,7 @@ import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewConfiguration;
 
-/**
+/**NestedScrollingChild和NestedScrollingParent不一定要直接的关联关系，只要在同一个树中就可以了
  * This interface should be implemented by {@link android.view.ViewGroup ViewGroup} subclasses
  * that wish to support scrolling operations delegated by a nested child view.
  *
@@ -36,7 +36,8 @@ import android.view.ViewConfiguration;
  * 5.0 Lollipop and newer.</p>
  */
 public interface NestedScrollingParent {
-    /**
+    /**view树里面有个后代view发起了嵌套滑动的请求，当前viewGroup是否配合一起完成嵌套滑动
+     * NestedScrollingChild.onStartNestedScroll--->ViewCompat.StartNestedScroll
      * React to a descendant view initiating a nestable scroll operation, claiming the
      * nested scroll operation if appropriate.
      *
@@ -78,7 +79,7 @@ public interface NestedScrollingParent {
      */
     public void onNestedScrollAccepted(View child, View target, int nestedScrollAxes);
 
-    /**
+    /**cancel和up事件都应该结束嵌套滑动
      * React to a nested scroll operation ending.
      *
      * <p>Perform cleanup after a nested scrolling operation.
@@ -115,7 +116,7 @@ public interface NestedScrollingParent {
     public void onNestedScroll(View target, int dxConsumed, int dyConsumed,
             int dxUnconsumed, int dyUnconsumed);
 
-    /**
+    /**嵌套滑动，给NestedScrollingParent优先消费滑动事件，
      * React to a nested scroll in progress before the target view consumes a portion of the scroll.
      *
      * <p>When working with nested scrolling often the parent view may want an opportunity

@@ -20,7 +20,8 @@ package android.support.v4.view;
 import android.view.View;
 import android.view.ViewGroup;
 
-/**
+/**构造函数里面初始化这个帮助类，兼容android5.0以前
+ * 这里都是代理方法，从NestedScrollingParent的相关方法代理到这个类的相应方法
  * Helper class for implementing nested scrolling parent views compatible with Android platform
  * versions earlier than Android 5.0 Lollipop (API 21).
  *
@@ -47,7 +48,7 @@ public class NestedScrollingParentHelper {
         mViewGroup = viewGroup;
     }
 
-    /**
+    /**NestedScrollingParent接受NestedScrollingChild发起的嵌套滑动，
      * Called when a nested scrolling operation initiated by a descendant view is accepted
      * by this ViewGroup.
      *
@@ -59,7 +60,7 @@ public class NestedScrollingParentHelper {
         mNestedScrollAxes = axes;
     }
 
-    /**
+    /**返回当前嵌套滑动的轴，水平轴、垂直轴，或者俩者都有
      * Return the current axes of nested scrolling for this ViewGroup.
      *
      * <p>This is a delegate method. Call it from your {@link android.view.ViewGroup ViewGroup}

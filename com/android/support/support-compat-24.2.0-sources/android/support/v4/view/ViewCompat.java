@@ -3160,9 +3160,9 @@ public class ViewCompat {
         return IMPL.isNestedScrollingEnabled(view);
     }
 
-    /**
+    /**沿着指定的轴开始嵌套滚动，
      * Begin a nestable scroll operation along the given axes.
-     *
+     *发起嵌套滚动的view承诺遵守下面的规则，ACTION_DOWN事件调用startNestedScroll
      * <p>A view starting a nested scroll promises to abide by the following contract:</p>
      *
      * <p>The view will call startNestedScroll upon initiating a scroll operation. In the case
@@ -3172,10 +3172,13 @@ public class ViewCompat {
      * In the event of programmatic scrolling the caller must explicitly call
      * {@link #stopNestedScroll(View)} to indicate the end of the nested scroll.</p>
      *
+     *
+     *如果startNestedScroll返回true，那么找到一个愿意配合嵌套滚动的NestedScrollingParent
      * <p>If <code>startNestedScroll</code> returns true, a cooperative parent was found.
      * If it returns false the caller may ignore the rest of this contract until the next scroll.
      * Calling startNestedScroll while a nested scroll is already in progress will return true.</p>
      *
+     * 每个增量滚动，调用者需要调用dispatchNestedPreScroll，，不需要每次的滑动量都刚好被消费完，可以多消费或者少消费，差一点点没有关系的
      * <p>At each incremental step of the scroll the caller should invoke
      * {@link #dispatchNestedPreScroll(View, int, int, int[], int[]) dispatchNestedPreScroll}
      * once it has calculated the requested scrolling delta. If it returns true the nested scrolling
