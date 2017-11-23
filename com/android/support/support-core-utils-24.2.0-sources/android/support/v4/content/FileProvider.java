@@ -323,10 +323,10 @@ import java.util.Map;
 public class FileProvider extends ContentProvider {
     private static final String[] COLUMNS = {
             OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE };
-
+    //写在AndroidManifest.xml文件里面的字段
     private static final String
             META_DATA_FILE_PROVIDER_PATHS = "android.support.FILE_PROVIDER_PATHS";
-
+    //配置文件里面的6个tag,
     private static final String TAG_ROOT_PATH = "root-path";
     private static final String TAG_FILES_PATH = "files-path";
     private static final String TAG_CACHE_PATH = "cache-path";
@@ -340,6 +340,7 @@ public class FileProvider extends ContentProvider {
     private static final File DEVICE_ROOT = new File("/");
 
     // @GuardedBy("sCache")
+    //缓存，key是权限，
     private static HashMap<String, PathStrategy> sCache = new HashMap<String, PathStrategy>();
 
     private PathStrategy mStrategy;
@@ -485,7 +486,7 @@ public class FileProvider extends ContentProvider {
         return "application/octet-stream";
     }
 
-    /**
+    /**不支持插入操作
      * By default, this method throws an {@link java.lang.UnsupportedOperationException}. You must
      * subclass FileProvider if you want to provide different functionality.
      */
@@ -494,7 +495,7 @@ public class FileProvider extends ContentProvider {
         throw new UnsupportedOperationException("No external inserts");
     }
 
-    /**
+    /**不支持更新操作
      * By default, this method throws an {@link java.lang.UnsupportedOperationException}. You must
      * subclass FileProvider if you want to provide different functionality.
      */
@@ -544,7 +545,7 @@ public class FileProvider extends ContentProvider {
         return ParcelFileDescriptor.open(file, fileMode);
     }
 
-    /**
+    /**返回权限对应的路径策略，可能有操作缓存
      * Return {@link PathStrategy} for given authority, either by parsing or
      * returning from cache.
      */
@@ -568,7 +569,7 @@ public class FileProvider extends ContentProvider {
         return strat;
     }
 
-    /**
+    /**解析指定权限的路径策略，
      * Parse and return {@link PathStrategy} for given authority as defined in
      * {@link #META_DATA_FILE_PROVIDER_PATHS} {@code <meta-data>}.
      *
@@ -577,16 +578,17 @@ public class FileProvider extends ContentProvider {
     private static PathStrategy parsePathStrategy(Context context, String authority)
             throws IOException, XmlPullParserException {
         final SimplePathStrategy strat = new SimplePathStrategy(authority);
-
+        //获取provider的信息，
         final ProviderInfo info = context.getPackageManager()
                 .resolveContentProvider(authority, PackageManager.GET_META_DATA);
+        //加载metaData里面的xml资源
         final XmlResourceParser in = info.loadXmlMetaData(
                 context.getPackageManager(), META_DATA_FILE_PROVIDER_PATHS);
         if (in == null) {
             throw new IllegalArgumentException(
                     "Missing " + META_DATA_FILE_PROVIDER_PATHS + " meta-data");
         }
-
+        //解析xml配置文件，
         int type;
         while ((type = in.next()) != END_DOCUMENT) {
             if (type == START_TAG) {
@@ -617,6 +619,7 @@ public class FileProvider extends ContentProvider {
                 }
 
                 if (target != null) {
+                    //添加映射规则
                     strat.addRoot(name, buildPath(target, path));
                 }
             }
@@ -625,13 +628,15 @@ public class FileProvider extends ContentProvider {
         return strat;
     }
 
-    /**
+    /**File和Uri之间的一种映射策略，
      * Strategy for mapping between {@link File} and {@link Uri}.
      * <p>
+     *  映射策略是对称的，
      * Strategies must be symmetric so that mapping a {@link File} to a
      * {@link Uri} and then back to a {@link File} points at the original
      * target.
      * <p>
+     * 映射是稳定的，不会因为进程重启而改变
      * Strategies must remain consistent across app launches, and not rely on
      * dynamic state. This ensures that any generated {@link Uri} can still be
      * resolved if your process is killed and later restarted.
@@ -639,18 +644,18 @@ public class FileProvider extends ContentProvider {
      * @see SimplePathStrategy
      */
     interface PathStrategy {
-        /**
+        /**文件映射到Uri
          * Return a {@link Uri} that represents the given {@link File}.
          */
         public Uri getUriForFile(File file);
 
-        /**
+        /**Uri还原到文件
          * Return a {@link File} that represents the given {@link Uri}.
          */
         public File getFileForUri(Uri uri);
     }
 
-    /**
+    /**File和Uri之间具体的映射策略
      * Strategy that provides access to files living under a narrow whitelist of
      * filesystem roots. It will throw {@link SecurityException} if callers try
      * accessing files outside the configured roots.
@@ -662,13 +667,14 @@ public class FileProvider extends ContentProvider {
      */
     static class SimplePathStrategy implements PathStrategy {
         private final String mAuthority;
+        //名字到文件路径的映射，名字是在xml文件里配置的
         private final HashMap<String, File> mRoots = new HashMap<String, File>();
 
         public SimplePathStrategy(String authority) {
             mAuthority = authority;
         }
 
-        /**
+        /**添加映射规则，参数name是在配置文件里面写的，
          * Add a mapping from a name to a filesystem root. The provider only offers
          * access to files that live under configured roots.
          */
@@ -687,7 +693,7 @@ public class FileProvider extends ContentProvider {
 
             mRoots.put(name, root);
         }
-
+        //文件到Uri的映射，
         @Override
         public Uri getUriForFile(File file) {
             String path;
@@ -698,6 +704,7 @@ public class FileProvider extends ContentProvider {
             }
 
             // Find the most-specific root path
+            //为什么会有最匹配一说，不是直接精确匹配吗？  匹配规则里面是到文件夹，不是到具体文件，
             Map.Entry<String, File> mostSpecific = null;
             for (Map.Entry<String, File> root : mRoots.entrySet()) {
                 final String rootPath = root.getValue().getPath();
@@ -719,7 +726,7 @@ public class FileProvider extends ContentProvider {
             } else {
                 path = path.substring(rootPath.length() + 1);
             }
-
+            //构建最后的Uri
             // Encode the tag and path separately
             path = Uri.encode(mostSpecific.getKey()) + '/' + Uri.encode(path, "/");
             return new Uri.Builder().scheme("content")
@@ -734,7 +741,7 @@ public class FileProvider extends ContentProvider {
             final String tag = Uri.decode(path.substring(1, splitIndex));
             path = Uri.decode(path.substring(splitIndex + 1));
 
-            final File root = mRoots.get(tag);
+            final File root = mRoots.get(tag);//程序员指定的名字，name   然后获取到文件夹路径，，
             if (root == null) {
                 throw new IllegalArgumentException("Unable to find configured root for " + uri);
             }
@@ -781,7 +788,7 @@ public class FileProvider extends ContentProvider {
         }
         return modeBits;
     }
-
+    //构建文件路径，
     private static File buildPath(File base, String... segments) {
         File cur = base;
         for (String segment : segments) {
@@ -791,7 +798,7 @@ public class FileProvider extends ContentProvider {
         }
         return cur;
     }
-
+    //复制数组
     private static String[] copyOf(String[] original, int newLength) {
         final String[] result = new String[newLength];
         System.arraycopy(original, 0, result, 0, newLength);
